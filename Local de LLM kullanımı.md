@@ -679,3 +679,265 @@ tokenizer.save_pretrained("./lora_mistral")
 | `ImportError: bitsandbytes` | `bitsandbytes` uygun CUDA sürümüyle uyumsuz. | PyTorch ve CUDA sürümünü eşleştirin; `pip uninstall bitsandbytes && pip install bitsandbytes==0.44.0` gibi sürüm belirleyin. |
 | `OSError: No such file or directory: 'tokenizer.json'` | Tokenizer bulunamadı. | Modelin *config* gibi bir `tokenizer` klasörü yoksa, aynı modelin **HF tokenizer** (`mistralai/Mistral-7B-Instruct-v0.2`) ile `from_pretrained` edin. |
 | `torch.cuda.is_available() == False
+
+
+
+
+# BÖLÜM3
+
+Elbette! Sana temel bir **Django projesi** oluşturmak için gerekli olan başlangıç adımlarını, dizin yapısını, temel **Model**, **View** ve **URL yapılandırması** ile birlikte ayrıntılı olarak açıklıyorum.
+
+---
+
+## 🎯 Django Projesi Oluşturmak için Başlangıç
+
+### 1. 🛠️ Gerekli Ortam Kurulumu
+
+İlk olarak Python ve `pip` yüklü olmalı.
+
+```bash
+# Sanal ortam oluştur
+python -m venv myenv
+
+# Sanal ortamı aktif et (Linux/Mac)
+source myenv/bin/activate
+
+# Sanal ortamı aktif et (Windows)
+myenv\Scripts\activate
+```
+
+### 2. 📦 Django Kurulumu
+
+```bash
+pip install django
+```
+
+---
+
+## 📁 1. Django Projesi ve Uygulaması Oluşturma
+
+```bash
+# Yeni bir Django projesi oluştur
+django-admin startproject myproject
+
+# Projeye gir
+cd myproject
+
+# Bir uygulama oluştur (örn. blog)
+python manage.py startapp blog
+```
+
+---
+
+## 📁 2. Proje Dizin Yapısı
+
+Aşağıdaki gibi bir dizin yapısı oluşur:
+
+```
+myproject/
+│
+├── manage.py
+├── myproject/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+│
+└── blog/
+    ├── __init__.py
+    ├── admin.py
+    ├── apps.py
+    ├── models.py
+    ├── views.py
+    ├── urls.py     # (Bu dosyayı biz oluşturacağız)
+    ├── migrations/
+    └── tests.py
+```
+
+---
+
+## 📦 3. Uygulamayı Tanıt (settings.py)
+
+`myproject/settings.py` dosyasına uygulamayı ekle:
+
+```python
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'blog',  # 👈 Uygulama burada eklenir
+]
+```
+
+---
+
+## 🧱 4. Model Oluşturma (models.py)
+
+`blog/models.py` içeriği:
+
+```python
+from django.db import models
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+```
+
+### Modeli veritabanına ekle:
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+---
+
+## 👁️ 5. View Oluşturma (views.py)
+
+`blog/views.py` içeriği:
+
+```python
+from django.shortcuts import render
+from django.http import HttpResponse
+from .models import Post
+
+def post_list(request):
+    posts = Post.objects.all()
+    return render(request, 'blog/post_list.html', {'posts': posts})
+
+def home(request):
+    return HttpResponse("Hoş geldiniz! Bu Django anasayfasıdır.")
+```
+
+---
+
+## 🔗 6. URL Yapılandırması
+
+### a) `blog/urls.py` dosyasını oluştur:
+
+```python
+# blog/urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.home, name='home'),
+    path('posts/', views.post_list, name='post_list'),
+]
+```
+
+### b) Ana URL yapılandırması (`myproject/urls.py`):
+
+```python
+# myproject/urls.py
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('blog.urls')),
+]
+```
+
+---
+
+## 🖼️ 7. Template Oluşturma (HTML Sayfaları)
+
+### a) `blog/templates/blog/` klasörünü oluştur:
+
+```
+blog/
+└── templates/
+    └── blog/
+        └── post_list.html
+```
+
+### b) `blog/templates/blog/post_list.html` içeriği:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blog Yazıları</title>
+</head>
+<body>
+    <h1>Blog Yazıları</h1>
+    <ul>
+        {% for post in posts %}
+            <li>{{ post.title }} - {{ post.created_at }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+```
+
+### c) `settings.py` içine template ayarlarını ekle (gerekirse):
+
+```python
+TEMPLATES = [
+    {
+        ...
+        'DIRS': [BASE_DIR / 'templates'],  # Eğer genel template klasörü varsa
+        ...
+    },
+]
+```
+
+---
+
+## 🧪 8. Admin Paneline Model Ekleme
+
+`blog/admin.py` dosyasını düzenle:
+
+```python
+from django.contrib import admin
+from .models import Post
+
+admin.site.register(Post)
+```
+
+### Admin kullanıcısı oluştur:
+
+```bash
+python manage.py createsuperuser
+```
+
+---
+
+## ▶️ 9. Sunucuyu Çalıştır
+
+```bash
+python manage.py runserver
+```
+
+Tarayıcında `http://127.0.0.1:8000/` adresine git.
+
+- Admin paneli için: `http://127.0.0.1:8000/admin/`
+
+---
+
+## ✅ Özet
+
+| Bileşen      | Açıklama |
+|--------------|----------|
+| `models.py`  | Veritabanı tablolarını tanımlar |
+| `views.py`   | Kullanıcı isteklerini işler |
+| `urls.py`    | URL'leri view fonksiyonlarına bağlar |
+| Templates    | HTML sayfalarını oluşturur |
+| Admin Panel  | Modelleri yönetim arayüzünden yönetir |
+
+---
+
+Eğer özel bir proje (örn. blog, e-ticaret, sosyal medya) üzerine kurmak istersen, ona özel model ve view yapılarını da hazırlayabilirim.
+
+İstersen bir sonraki adım olarak veri ekleme, form işlemleri veya kullanıcı yetkilendirme gibi konulara da geçebiliriz. Yardımcı olmamı ister misin? 😊
+
+Click to add a cell.
